@@ -23,6 +23,9 @@ export default function UsersTab() {
   const [addForm, setAddForm] = useState({ firstName: '', lastName: '', email: '', password: '' })
   const [addLoading, setAddLoading] = useState(false)
   const [addError, setAddError] = useState('')
+  const [deleteLoadingId, setDeleteLoadingId] = useState<string | null>(null)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
 
   function fetchUsers() {
     setLoading(true)
@@ -96,14 +99,8 @@ export default function UsersTab() {
                       >
                         Update
                       </Button>
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        onClick={() => {
-                          // TODO: handle delete user
-                        }}
-                      >
-                        Delete
+                      <Button variant="destructive" size="sm" disabled={deleteLoadingId === user.id} onClick={() => setConfirmDeleteId(user.id)}>
+                        {deleteLoadingId === user.id ? 'Deleting...' : 'Delete'}
                       </Button>
                     </div>
                   </TableCell>
@@ -114,6 +111,50 @@ export default function UsersTab() {
           </Table>
         </div>
       )}
+      {deleteError && <div className="text-red-500 text-sm mb-2">{deleteError}</div>}
+      <Dialog open={!!confirmDeleteId} onOpenChange={(open) => !open && setConfirmDeleteId(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirm Delete</DialogTitle>
+          </DialogHeader>
+          <div>Are you sure you want to delete this user?</div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfirmDeleteId(null)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={!!deleteLoadingId}
+              onClick={async () => {
+                if (!confirmDeleteId) return
+                setDeleteLoadingId(confirmDeleteId)
+                setDeleteError(null)
+                try {
+                  const res = await fetch(`${API_BASE_URL}/parents/${confirmDeleteId}`, {
+                    method: 'DELETE',
+                    headers: {
+                      accept: '*/*',
+                      Authorization: `Bearer ${typeof window !== 'undefined' ? localStorage.getItem('token') : ''}`,
+                    },
+                  })
+                  if (res.ok) {
+                    fetchUsers()
+                    setConfirmDeleteId(null)
+                  } else {
+                    const err = await res.text()
+                    setDeleteError(err || 'Failed to delete user')
+                  }
+                } catch {
+                  setDeleteError('Failed to delete user')
+                }
+                setDeleteLoadingId(null)
+              }}
+            >
+              {deleteLoadingId ? 'Deleting...' : 'Delete'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       <Dialog open={addOpen} onOpenChange={setAddOpen}>
         <DialogContent>
           <DialogHeader>
@@ -141,7 +182,7 @@ export default function UsersTab() {
                   const err = await res.text()
                   setAddError(err || 'Failed to add user')
                 }
-              } catch (err) {
+              } catch {
                 setAddError('Failed to add user')
               }
               setAddLoading(false)
