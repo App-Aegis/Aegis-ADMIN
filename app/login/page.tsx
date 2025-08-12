@@ -56,7 +56,7 @@ export default function LoginPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-100">
       <Card className="p-8 w-full max-w-md shadow-lg">
-        <h1 className="text-2xl font-bold mb-6 text-center">Admin Login</h1>
+        <h1 className="text-2xl font-bold mb-6 text-center">Aegis+ Admin Login</h1>
         <form onSubmit={handleLogin} className="space-y-4">
           <Input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required />
           <Input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required />

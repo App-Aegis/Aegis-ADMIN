@@ -96,19 +96,6 @@ export default function UsersTab() {
           <Button variant="outline" size="sm" onClick={fetchUsers} disabled={loading}>
             Refresh
           </Button>
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() => {
-              if (typeof window !== 'undefined') {
-                localStorage.removeItem('token')
-                document.cookie = 'token=; Max-Age=0; path=/'
-                window.location.href = '/login'
-              }
-            }}
-          >
-            Logout
-          </Button>
         </div>
       </div>
       {loading ? (
