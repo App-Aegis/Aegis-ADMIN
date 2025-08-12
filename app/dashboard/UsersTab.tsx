@@ -17,6 +17,8 @@ type User = {
 
 export default function UsersTab() {
   const [users, setUsers] = useState<User[]>([])
+  const [sortBy, setSortBy] = useState<string>('')
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [addOpen, setAddOpen] = useState(false)
@@ -26,6 +28,10 @@ export default function UsersTab() {
   const [deleteLoadingId, setDeleteLoadingId] = useState<string | null>(null)
   const [deleteError, setDeleteError] = useState<string | null>(null)
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
+  const [updateOpen, setUpdateOpen] = useState(false)
+  const [updateForm, setUpdateForm] = useState({ id: '', firstName: '', lastName: '', email: '', password: '', isVerified: false })
+  const [updateLoading, setUpdateLoading] = useState(false)
+  const [updateError, setUpdateError] = useState('')
 
   function fetchUsers() {
     setLoading(true)
@@ -50,6 +56,35 @@ export default function UsersTab() {
     fetchUsers()
   }, [])
 
+  // Sorting logic
+  const sortedUsers = [...users].sort((a, b) => {
+    if (!sortBy) return 0
+    let valA, valB
+    switch (sortBy) {
+      case 'name':
+        valA = `${a.firstName} ${a.lastName}`.toLowerCase()
+        valB = `${b.firstName} ${b.lastName}`.toLowerCase()
+        break
+      case 'email':
+        valA = a.email.toLowerCase()
+        valB = b.email.toLowerCase()
+        break
+      case 'isVerified':
+        valA = a.isVerified ? 1 : 0
+        valB = b.isVerified ? 1 : 0
+        break
+      case 'createdAt':
+        valA = new Date(a.createdAt).getTime()
+        valB = new Date(b.createdAt).getTime()
+        break
+      default:
+        return 0
+    }
+    if (valA < valB) return sortOrder === 'asc' ? -1 : 1
+    if (valA > valB) return sortOrder === 'asc' ? 1 : -1
+    return 0
+  })
+
   return (
     <Card className="p-8 w-full max-w-4xl shadow-lg">
       <div className="flex items-center justify-between mb-6">
@@ -69,32 +104,113 @@ export default function UsersTab() {
         <div className="text-center text-red-500">{error}</div>
       ) : (
         <div style={{ minHeight: 400 }}>
-          <Table>
+          <Table className="w-full border-collapse">
             <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Verified</TableHead>
-                <TableHead>Created At</TableHead>
-                <TableHead>Actions</TableHead>
+              <TableRow className="bg-gray-100">
+                <TableHead
+                  className="border border-gray-300 px-4 py-2 cursor-pointer"
+                  onClick={() => {
+                    if (sortBy === 'name') {
+                      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')
+                    } else {
+                      setSortBy('name')
+                      setSortOrder('asc')
+                    }
+                  }}
+                >
+                  Name {sortBy === 'name' ? (sortOrder === 'asc' ? '▲' : '▼') : ''}
+                </TableHead>
+                <TableHead
+                  className="border border-gray-300 px-4 py-2 cursor-pointer"
+                  onClick={() => {
+                    if (sortBy === 'email') {
+                      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')
+                    } else {
+                      setSortBy('email')
+                      setSortOrder('asc')
+                    }
+                  }}
+                >
+                  Email {sortBy === 'email' ? (sortOrder === 'asc' ? '▲' : '▼') : ''}
+                </TableHead>
+                <TableHead
+                  className="border border-gray-300 px-4 py-2 cursor-pointer"
+                  onClick={() => {
+                    if (sortBy === 'isVerified') {
+                      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')
+                    } else {
+                      setSortBy('isVerified')
+                      setSortOrder('asc')
+                    }
+                  }}
+                >
+                  Verified {sortBy === 'isVerified' ? (sortOrder === 'asc' ? '▲' : '▼') : ''}
+                </TableHead>
+                <TableHead
+                  className="border border-gray-300 px-4 py-2 cursor-pointer"
+                  onClick={() => {
+                    if (sortBy === 'createdAt') {
+                      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')
+                    } else {
+                      setSortBy('createdAt')
+                      setSortOrder('asc')
+                    }
+                  }}
+                >
+                  Created At {sortBy === 'createdAt' ? (sortOrder === 'asc' ? '▲' : '▼') : ''}
+                </TableHead>
+                <TableHead className="border border-gray-300 px-4 py-2">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {users.map((user: User) => (
-                <TableRow key={user.id}>
-                  <TableCell>
+              {sortedUsers.map((user: User) => (
+                <TableRow key={user.id} className="hover:bg-gray-50">
+                  <TableCell className="border border-gray-200 px-4 py-2">
                     {user.firstName} {user.lastName}
                   </TableCell>
-                  <TableCell>{user.email}</TableCell>
-                  <TableCell>{user.isVerified ? 'Yes' : 'No'}</TableCell>
-                  <TableCell>{new Date(user.createdAt).toLocaleString()}</TableCell>
-                  <TableCell>
+                  <TableCell className="border border-gray-200 px-4 py-2">{user.email}</TableCell>
+                  <TableCell className="border border-gray-200 px-4 py-2">
+                    <input
+                      type="checkbox"
+                      checked={user.isVerified}
+                      onChange={async (e) => {
+                        const newVerified = e.target.checked
+                        try {
+                          const res = await fetch(`${API_BASE_URL}/parents/${user.id}`, {
+                            method: 'PATCH',
+                            headers: {
+                              'Content-Type': 'application/json',
+                              accept: 'text/plain',
+                              Authorization: `Bearer ${typeof window !== 'undefined' ? localStorage.getItem('token') : ''}`,
+                            },
+                            body: JSON.stringify({ isVerified: newVerified }),
+                          })
+                          if (res.ok) {
+                            fetchUsers()
+                          } else {
+                          }
+                        } catch {}
+                      }}
+                      style={{ cursor: 'pointer' }}
+                    />
+                  </TableCell>
+                  <TableCell className="border border-gray-200 px-4 py-2">{new Date(user.createdAt).toLocaleString()}</TableCell>
+                  <TableCell className="border border-gray-200 px-4 py-2">
                     <div className="flex gap-2">
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={() => {
-                          // TODO: open update user modal
+                          setUpdateForm({
+                            id: user.id,
+                            firstName: user.firstName,
+                            lastName: user.lastName,
+                            email: user.email,
+                            password: '',
+                            isVerified: user.isVerified,
+                          })
+                          setUpdateError('')
+                          setUpdateOpen(true)
                         }}
                       >
                         Update
@@ -153,6 +269,67 @@ export default function UsersTab() {
               {deleteLoadingId ? 'Deleting...' : 'Delete'}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={updateOpen} onOpenChange={setUpdateOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Update User</DialogTitle>
+          </DialogHeader>
+          <form
+            onSubmit={async (e) => {
+              e.preventDefault()
+              setUpdateLoading(true)
+              setUpdateError('')
+              try {
+                const res = await fetch(`${API_BASE_URL}/parents/${updateForm.id}`, {
+                  method: 'PATCH',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    accept: 'text/plain',
+                    Authorization: `Bearer ${typeof window !== 'undefined' ? localStorage.getItem('token') : ''}`,
+                  },
+                  body: JSON.stringify({
+                    firstName: updateForm.firstName,
+                    lastName: updateForm.lastName,
+                    email: updateForm.email,
+                    password: updateForm.password,
+                    isVerified: updateForm.isVerified,
+                  }),
+                })
+                if (res.ok) {
+                  setUpdateOpen(false)
+                  setUpdateForm({ id: '', firstName: '', lastName: '', email: '', password: '', isVerified: false })
+                  fetchUsers()
+                } else {
+                  const err = await res.text()
+                  setUpdateError(err || 'Failed to update user')
+                }
+              } catch {
+                setUpdateError('Failed to update user')
+              }
+              setUpdateLoading(false)
+            }}
+            className="space-y-4"
+          >
+            <Input placeholder="First Name" value={updateForm.firstName} onChange={(e) => setUpdateForm((f) => ({ ...f, firstName: e.target.value }))} required />
+            <Input placeholder="Last Name" value={updateForm.lastName} onChange={(e) => setUpdateForm((f) => ({ ...f, lastName: e.target.value }))} required />
+            <Input type="email" placeholder="Email" value={updateForm.email} onChange={(e) => setUpdateForm((f) => ({ ...f, email: e.target.value }))} required />
+            <Input type="password" placeholder="Password (leave blank to keep current)" value={updateForm.password} onChange={(e) => setUpdateForm((f) => ({ ...f, password: e.target.value }))} />
+            <div className="flex items-center gap-2">
+              <label htmlFor="isVerified">Verified:</label>
+              <input id="isVerified" type="checkbox" checked={updateForm.isVerified} onChange={(e) => setUpdateForm((f) => ({ ...f, isVerified: e.target.checked }))} />
+            </div>
+            {updateError && <div className="text-red-500 text-sm">{updateError}</div>}
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setUpdateOpen(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={updateLoading}>
+                {updateLoading ? 'Updating...' : 'Update User'}
+              </Button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
       <Dialog open={addOpen} onOpenChange={setAddOpen}>
