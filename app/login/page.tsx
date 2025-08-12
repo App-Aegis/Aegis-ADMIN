@@ -23,12 +23,27 @@ export default function LoginPage() {
       })
       const data = await res.json()
       if (res.ok && data.token) {
-        localStorage.setItem('token', data.token)
-        localStorage.setItem('email', email)
-        // Set token as cookie for middleware
-        document.cookie = `token=${data.token}; path=/; SameSite=Lax`
-        console.log('Login successful, redirecting to dashboard...')
-        router.push('/dashboard')
+        // Decode JWT to check for Admin role
+        function parseJwt(token: string) {
+          try {
+            return JSON.parse(atob(token.split('.')[1]))
+          } catch {
+            return null
+          }
+        }
+        const payload = parseJwt(data.token)
+        // Accept roles as array, string, or namespaced claim
+        const roles = payload?.roles || payload?.role || payload?.['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'] || []
+        const hasAdmin = Array.isArray(roles) ? roles.includes('Admin') : typeof roles === 'string' ? roles === 'Admin' : false
+        if (hasAdmin) {
+          localStorage.setItem('token', data.token)
+          localStorage.setItem('email', email)
+          document.cookie = `token=${data.token}; path=/; SameSite=Lax`
+          console.log('Login successful, redirecting to dashboard...')
+          router.push('/dashboard')
+        } else {
+          setError('You do not have admin access.')
+        }
       } else {
         setError('Invalid credentials')
       }
