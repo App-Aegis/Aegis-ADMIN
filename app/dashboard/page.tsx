@@ -1,15 +1,14 @@
 'use client'
 
-import { BarChart, Users } from 'lucide-react'
+import { BarChart, FileText, LayoutDashboard, MessageCircle, Users } from 'lucide-react'
 import { useState } from 'react'
 import { Avatar, AvatarFallback } from '../../components/ui/avatar'
-import { Card } from '../../components/ui/card'
 import { Popover, PopoverContent, PopoverTrigger } from '../../components/ui/popover'
 import { Sidebar, SidebarContent, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarProvider, SidebarSeparator } from '../../components/ui/sidebar'
 import UsersTab from './UsersTab'
 
 export default function DashboardPage() {
-  const [activeTab, setActiveTab] = useState<'users' | 'revenue'>('users')
+  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'revenue' | 'feedback' | 'logs'>('overview')
   let email = ''
   if (typeof window !== 'undefined') {
     const token = localStorage.getItem('token')
@@ -28,8 +27,12 @@ export default function DashboardPage() {
           <SidebarHeader className="mb-2">
             <span className="font-bold text-xl tracking-tight">Aegis+ Admin Dashboard</span>
           </SidebarHeader>
-          <SidebarContent>
-            <SidebarMenu>
+          <SidebarContent className="flex flex-col h-full">
+            <SidebarMenu className="flex flex-col gap-1">
+              <SidebarMenuButton className="mb-1" variant="default" size="lg" isActive={activeTab === 'overview'} tooltip="Overview" onClick={() => setActiveTab('overview')}>
+                <LayoutDashboard className="mr-2" />
+                <span>Overview</span>
+              </SidebarMenuButton>
               <SidebarMenuButton className="mb-1" variant="default" size="lg" isActive={activeTab === 'users'} tooltip="Users" onClick={() => setActiveTab('users')}>
                 <Users className="mr-2" />
                 <span>Users</span>
@@ -37,6 +40,14 @@ export default function DashboardPage() {
               <SidebarMenuButton className="mb-1" variant="default" size="lg" isActive={activeTab === 'revenue'} tooltip="Revenue" onClick={() => setActiveTab('revenue')}>
                 <BarChart className="mr-2" />
                 <span>Revenue</span>
+              </SidebarMenuButton>
+              <SidebarMenuButton className="mb-1" variant="default" size="lg" isActive={activeTab === 'feedback'} tooltip="Feedback" onClick={() => setActiveTab('feedback')}>
+                <MessageCircle className="mr-2" />
+                <span>Feedback</span>
+              </SidebarMenuButton>
+              <SidebarMenuButton className="mb-1" variant="default" size="lg" isActive={activeTab === 'logs'} tooltip="Logs" onClick={() => setActiveTab('logs')}>
+                <FileText className="mr-2" />
+                <span>Logs</span>
               </SidebarMenuButton>
             </SidebarMenu>
             <SidebarSeparator />
@@ -66,12 +77,26 @@ export default function DashboardPage() {
           </div>
         </Sidebar>
         <main className="flex-1">
-          {activeTab === 'users' ? (
-            <UsersTab />
-          ) : (
-            <Card className="p-8 w-full max-w-md shadow-lg">
-              <h1 className="text-2xl font-bold mb-6 text-center">Coming soon</h1>
-            </Card>
+          {activeTab === 'overview' && (
+            <div className="p-8 w-full">
+              <h1 className="text-2xl font-bold mb-6">Coming soon</h1>
+            </div>
+          )}
+          {activeTab === 'users' && <UsersTab />}
+          {activeTab === 'revenue' && (
+            <div className="p-8 w-full">
+              <h1 className="text-2xl font-bold mb-6">Coming soon</h1>
+            </div>
+          )}
+          {activeTab === 'feedback' && (
+            <div className="p-8 w-full">
+              <h1 className="text-2xl font-bold mb-6">Coming soon</h1>
+            </div>
+          )}
+          {activeTab === 'logs' && (
+            <div className="p-8 w-full">
+              <h1 className="text-2xl font-bold mb-6">Coming soon</h1>
+            </div>
           )}
         </main>
       </div>
