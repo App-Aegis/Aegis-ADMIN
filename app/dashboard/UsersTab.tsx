@@ -7,6 +7,9 @@ import { API_BASE_URL } from '../../lib/api'
 import type { Parent } from '../../models/parent'
 
 export default function UsersTab() {
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
+  const [totalResults, setTotalResults] = useState(0)
   const [users, setUsers] = useState<Parent[]>([])
   const [sortBy, setSortBy] = useState<string>('')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc')
@@ -24,17 +27,29 @@ export default function UsersTab() {
   const [updateLoading, setUpdateLoading] = useState(false)
   const [updateError, setUpdateError] = useState('')
 
-  function fetchUsers() {
+  function fetchUsers({ page: fetchPage = page, pageSize: fetchPageSize = pageSize } = {}) {
     setLoading(true)
     setError('')
-    fetch(`${API_BASE_URL}/parents`, {
+    const params = new URLSearchParams()
+    params.append('page', String(fetchPage))
+    params.append('pageSize', String(fetchPageSize))
+    fetch(`${API_BASE_URL}/parents?${params.toString()}`, {
       headers: {
         Authorization: `Bearer ${typeof window !== 'undefined' ? localStorage.getItem('token') : ''}`,
       },
     })
       .then((res) => res.json())
       .then((data) => {
-        setUsers(Array.isArray(data) ? data : [])
+        if (Array.isArray(data.items)) {
+          setUsers(data.items)
+          setTotalResults(typeof data.totalResults === 'number' ? data.totalResults : 0)
+        } else if (Array.isArray(data)) {
+          setUsers(data)
+          setTotalResults(0)
+        } else {
+          setUsers([])
+          setTotalResults(0)
+        }
         setLoading(false)
       })
       .catch(() => {
@@ -44,8 +59,9 @@ export default function UsersTab() {
   }
 
   useEffect(() => {
-    fetchUsers()
-  }, [])
+    fetchUsers({ page, pageSize })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, pageSize])
 
   // Sorting logic
   const sortedUsers = [...users].sort((a, b) => {
@@ -84,10 +100,85 @@ export default function UsersTab() {
           <Button variant="default" size="sm" onClick={() => setAddOpen(true)}>
             Add
           </Button>
-          <Button variant="outline" size="sm" onClick={fetchUsers} disabled={loading}>
+          <Button variant="outline" size="sm" onClick={() => fetchUsers({ page, pageSize })} disabled={loading}>
             Refresh
           </Button>
         </div>
+      </div>
+      {/* Pagination controls (top) */}
+      <div className="flex items-center gap-4 mb-4 justify-center">
+        <Button size="sm" variant="ghost" disabled={page === 1} onClick={() => setPage(page - 1)}>
+          &lt; Previous
+        </Button>
+        {/* Pagination numbers: always show first and last page, with ellipses if needed */}
+        {(() => {
+          const pages = []
+          const totalPages = Math.max(1, Math.ceil(totalResults / pageSize))
+          const start = Math.max(2, page - 2)
+          const end = Math.min(totalPages - 1, page + 2)
+          // Always show first page
+          pages.push(
+            <Button key={1} size="sm" variant={page === 1 ? 'outline' : 'ghost'} className={page === 1 ? 'border' : ''} onClick={() => setPage(1)} style={{ minWidth: 32 }} disabled={page === 1}>
+              1
+            </Button>
+          )
+          if (start > 2) {
+            pages.push(
+              <span key="start-ellipsis" className="px-2">
+                ...
+              </span>
+            )
+          }
+          for (let i = start; i <= end; i++) {
+            if (i > 1 && i < totalPages) {
+              pages.push(
+                <Button key={i} size="sm" variant={i === page ? 'outline' : 'ghost'} className={i === page ? 'border' : ''} onClick={() => setPage(i)} style={{ minWidth: 32 }} disabled={i === page}>
+                  {i}
+                </Button>
+              )
+            }
+          }
+          if (end < totalPages - 1) {
+            pages.push(
+              <span key="end-ellipsis" className="px-2">
+                ...
+              </span>
+            )
+          }
+          if (totalPages > 1) {
+            pages.push(
+              <Button
+                key={totalPages}
+                size="sm"
+                variant={page === totalPages ? 'outline' : 'ghost'}
+                className={page === totalPages ? 'border' : ''}
+                onClick={() => setPage(totalPages)}
+                style={{ minWidth: 32 }}
+                disabled={page === totalPages}
+              >
+                {totalPages}
+              </Button>
+            )
+          }
+          return pages
+        })()}
+        <Button size="sm" variant="ghost" disabled={page * pageSize >= totalResults} onClick={() => setPage(page + 1)}>
+          Next &gt;
+        </Button>
+        <select
+          className="border px-2 py-1 rounded"
+          value={pageSize}
+          onChange={(e) => {
+            setPageSize(Number(e.target.value))
+            setPage(1)
+          }}
+        >
+          {[5, 10, 20, 50].map((size) => (
+            <option key={size} value={size}>
+              {size} / page
+            </option>
+          ))}
+        </select>
       </div>
       {loading ? (
         <div className="text-center">Loading...</div>
@@ -177,7 +268,7 @@ export default function UsersTab() {
                             body: JSON.stringify({ isVerified: newVerified }),
                           })
                           if (res.ok) {
-                            fetchUsers()
+                            fetchUsers({ page, pageSize })
                           } else {
                           }
                         } catch {}
@@ -245,7 +336,7 @@ export default function UsersTab() {
                     },
                   })
                   if (res.ok) {
-                    fetchUsers()
+                    fetchUsers({ page, pageSize })
                     setConfirmDeleteId(null)
                   } else {
                     const err = await res.text()
