@@ -1,3 +1,4 @@
+import { Edit2, Plus, RefreshCw, Trash2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Button } from '../../components/ui/button'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '../../components/ui/dialog'
@@ -97,11 +98,11 @@ export default function UsersTab() {
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Users</h1>
         <div className="flex gap-2">
-          <Button variant="default" size="sm" onClick={() => setAddOpen(true)}>
-            Add
+          <Button variant="ghost" size="icon" onClick={() => setAddOpen(true)} title="Add User" className="bg-green-500 hover:bg-green-600 text-white">
+            <Plus className="w-5 h-5" />
           </Button>
-          <Button variant="outline" size="sm" onClick={() => fetchUsers({ page, pageSize })} disabled={loading}>
-            Refresh
+          <Button variant="ghost" size="icon" onClick={() => fetchUsers({ page, pageSize })} disabled={loading} title="Refresh" className="bg-blue-500 hover:bg-blue-600 text-white">
+            <RefreshCw className="w-5 h-5" />
           </Button>
         </div>
       </div>
@@ -190,7 +191,7 @@ export default function UsersTab() {
             <TableHeader>
               <TableRow className="bg-gray-100">
                 <TableHead
-                  className="border border-gray-300 px-4 py-2 cursor-pointer"
+                  className="border border-gray-300 px-4 py-2 cursor-pointer font-bold"
                   onClick={() => {
                     if (sortBy === 'name') {
                       setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')
@@ -203,7 +204,7 @@ export default function UsersTab() {
                   Name {sortBy === 'name' ? (sortOrder === 'asc' ? '▲' : '▼') : ''}
                 </TableHead>
                 <TableHead
-                  className="border border-gray-300 px-4 py-2 cursor-pointer"
+                  className="border border-gray-300 px-4 py-2 cursor-pointer font-bold"
                   onClick={() => {
                     if (sortBy === 'email') {
                       setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')
@@ -216,7 +217,7 @@ export default function UsersTab() {
                   Email {sortBy === 'email' ? (sortOrder === 'asc' ? '▲' : '▼') : ''}
                 </TableHead>
                 <TableHead
-                  className="border border-gray-300 px-4 py-2 cursor-pointer"
+                  className="border border-gray-300 px-4 py-2 cursor-pointer font-bold"
                   onClick={() => {
                     if (sortBy === 'isVerified') {
                       setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')
@@ -229,7 +230,7 @@ export default function UsersTab() {
                   Verified {sortBy === 'isVerified' ? (sortOrder === 'asc' ? '▲' : '▼') : ''}
                 </TableHead>
                 <TableHead
-                  className="border border-gray-300 px-4 py-2 cursor-pointer"
+                  className="border border-gray-300 px-4 py-2 cursor-pointer font-bold"
                   onClick={() => {
                     if (sortBy === 'createdAt') {
                       setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')
@@ -241,7 +242,7 @@ export default function UsersTab() {
                 >
                   Created At {sortBy === 'createdAt' ? (sortOrder === 'asc' ? '▲' : '▼') : ''}
                 </TableHead>
-                <TableHead className="border border-gray-300 px-4 py-2">Actions</TableHead>
+                <TableHead className="border border-gray-300 px-4 py-2 font-bold">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -280,8 +281,8 @@ export default function UsersTab() {
                   <TableCell className="border border-gray-200 px-4 py-2">
                     <div className="flex gap-2">
                       <Button
-                        variant="outline"
-                        size="sm"
+                        variant="ghost"
+                        size="icon"
                         onClick={() => {
                           setUpdateForm({
                             id: user.id,
@@ -294,11 +295,20 @@ export default function UsersTab() {
                           setUpdateError('')
                           setUpdateOpen(true)
                         }}
+                        title="Update"
+                        className="bg-yellow-400 hover:bg-yellow-500 text-white"
                       >
-                        Update
+                        <Edit2 className="w-4 h-4" />
                       </Button>
-                      <Button variant="destructive" size="sm" disabled={deleteLoadingId === user.id} onClick={() => setConfirmDeleteId(user.id)}>
-                        {deleteLoadingId === user.id ? 'Deleting...' : 'Delete'}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        disabled={deleteLoadingId === user.id}
+                        onClick={() => setConfirmDeleteId(user.id)}
+                        title="Delete"
+                        className="bg-red-500 hover:bg-red-600 text-white"
+                      >
+                        <Trash2 className="w-4 h-4" />
                       </Button>
                     </div>
                   </TableCell>
