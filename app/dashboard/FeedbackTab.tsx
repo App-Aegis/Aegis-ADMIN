@@ -1,4 +1,5 @@
 'use client'
+import { Download, Edit2, Plus, RefreshCw, Search as SearchIcon, Trash2 } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 import { Button } from '../../components/ui/button'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '../../components/ui/dialog'
@@ -29,6 +30,10 @@ export default function FeedbackTab() {
   const [error, setError] = useState<string | null>(null)
   const [search, setSearch] = useState('')
   const [rating, setRating] = useState('')
+  const [pendingSearch, setPendingSearch] = useState('')
+  const [pendingRating, setPendingRating] = useState('')
+  const [sortBy, setSortBy] = useState('')
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc')
 
   // fetchParent moved outside fetchFeedbacks to avoid dependency cycle
   const fetchParent = useCallback(async (parentId: string): Promise<Parent | null> => {
@@ -97,19 +102,50 @@ export default function FeedbackTab() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search, rating, page, pageSize])
 
+  // Keep pendingSearch/pendingRating in sync with search/rating when search/rating changes (e.g. after submit)
+  useEffect(() => {
+    setPendingSearch(search)
+    setPendingRating(rating)
+  }, [search, rating])
+
   if (loading) return <div className="p-8">Loading feedback...</div>
   if (error) return <div className="p-8 text-red-500">{error}</div>
+
+  const handleExport = async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/feedbacks/export`, {
+        headers: {
+          Authorization: `Bearer ${typeof window !== 'undefined' ? localStorage.getItem('token') : ''}`,
+        },
+      })
+      if (!res.ok) throw new Error('Failed to export CSV')
+      const blob = await res.blob()
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = 'feedbacks.csv'
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      window.URL.revokeObjectURL(url)
+    } catch (e) {
+      alert('Failed to export feedbacks')
+    }
+  }
 
   return (
     <div className="p-8 w-full">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Feedback</h1>
         <div className="flex gap-2">
-          <Button variant="default" size="sm" onClick={() => setAddOpen(true)}>
-            Add
+          <Button variant="ghost" size="icon" onClick={() => setAddOpen(true)} title="Add Feedback" className="bg-green-500 hover:bg-green-600 text-white">
+            <Plus className="w-5 h-5" />
           </Button>
-          <Button variant="outline" size="sm" onClick={() => fetchFeedbacks({ search, rating })} disabled={loading}>
-            Refresh
+          <Button variant="ghost" size="icon" onClick={() => fetchFeedbacks({ search, rating })} disabled={loading} title="Refresh" className="bg-blue-500 hover:bg-blue-600 text-white">
+            <RefreshCw className="w-5 h-5" />
+          </Button>
+          <Button variant="ghost" size="icon" onClick={handleExport} title="Export CSV" className="bg-gray-500 hover:bg-gray-600 text-white">
+            <Download className="w-5 h-5" />
           </Button>
         </div>
       </div>
@@ -117,12 +153,13 @@ export default function FeedbackTab() {
         className="flex gap-4 mb-6"
         onSubmit={(e) => {
           e.preventDefault()
+          setSearch(pendingSearch)
+          setRating(pendingRating)
           setPage(1)
-          fetchFeedbacks({ search, rating, page: 1, pageSize })
         }}
       >
-        <input className="border px-2 py-1 rounded" type="text" placeholder="Search feedback..." value={search} onChange={(e) => setSearch(e.target.value)} />
-        <select className="border px-2 py-1 rounded" value={rating} onChange={(e) => setRating(e.target.value)}>
+        <input className="border px-2 py-1 rounded" type="text" placeholder="Search feedback..." value={pendingSearch} onChange={(e) => setPendingSearch(e.target.value)} />
+        <select className="border px-2 py-1 rounded" value={pendingRating} onChange={(e) => setPendingRating(e.target.value)}>
           <option value="">All Ratings</option>
           <option value="5">5</option>
           <option value="4">4</option>
@@ -130,8 +167,8 @@ export default function FeedbackTab() {
           <option value="2">2</option>
           <option value="1">1</option>
         </select>
-        <Button type="submit" size="sm" variant="default" disabled={loading}>
-          Search
+        <Button type="submit" size="icon" variant="ghost" className="bg-gray-700 hover:bg-gray-800 text-white" disabled={loading} title="Search">
+          <SearchIcon className="w-5 h-5" />
         </Button>
       </form>
       <div className="flex items-center gap-4 mb-4 justify-center">
@@ -212,52 +249,159 @@ export default function FeedbackTab() {
         <table className="w-full border-collapse text-sm">
           <thead>
             <tr className="bg-gray-100">
-              <th className="border border-gray-300 px-4 py-2">Name</th>
-              <th className="border border-gray-300 px-4 py-2">Email</th>
-              <th className="border border-gray-300 px-4 py-2">Rating</th>
-              <th className="border border-gray-300 px-4 py-2">Comment</th>
-              <th className="border border-gray-300 px-4 py-2">Timestamp</th>
+              <th
+                className="border border-gray-300 px-4 py-2 cursor-pointer"
+                onClick={() => {
+                  if (sortBy === 'name') {
+                    setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')
+                  } else {
+                    setSortBy('name')
+                    setSortOrder('asc')
+                  }
+                }}
+              >
+                Name {sortBy === 'name' ? (sortOrder === 'asc' ? '▲' : '▼') : ''}
+              </th>
+              <th
+                className="border border-gray-300 px-4 py-2 cursor-pointer"
+                onClick={() => {
+                  if (sortBy === 'email') {
+                    setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')
+                  } else {
+                    setSortBy('email')
+                    setSortOrder('asc')
+                  }
+                }}
+              >
+                Email {sortBy === 'email' ? (sortOrder === 'asc' ? '▲' : '▼') : ''}
+              </th>
+              <th
+                className="border border-gray-300 px-4 py-2 cursor-pointer text-center"
+                onClick={() => {
+                  if (sortBy === 'rating') {
+                    setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')
+                  } else {
+                    setSortBy('rating')
+                    setSortOrder('asc')
+                  }
+                }}
+              >
+                Rating {sortBy === 'rating' ? (sortOrder === 'asc' ? '▲' : '▼') : ''}
+              </th>
+              <th
+                className="border border-gray-300 px-4 py-2 cursor-pointer"
+                onClick={() => {
+                  if (sortBy === 'comment') {
+                    setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')
+                  } else {
+                    setSortBy('comment')
+                    setSortOrder('asc')
+                  }
+                }}
+              >
+                Comment {sortBy === 'comment' ? (sortOrder === 'asc' ? '▲' : '▼') : ''}
+              </th>
+              <th
+                className="border border-gray-300 px-4 py-2 cursor-pointer"
+                onClick={() => {
+                  if (sortBy === 'timestamp') {
+                    setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')
+                  } else {
+                    setSortBy('timestamp')
+                    setSortOrder('asc')
+                  }
+                }}
+              >
+                Timestamp {sortBy === 'timestamp' ? (sortOrder === 'asc' ? '▲' : '▼') : ''}
+              </th>
               <th className="border border-gray-300 px-4 py-2">Actions</th>
             </tr>
           </thead>
           <tbody>
-            {feedbacks.map((fb) => {
-              const parent = parentDetails[fb.parentId]
-              return (
-                <tr key={fb.id} className="hover:bg-gray-50">
-                  <td className="border border-gray-200 px-4 py-2">{parent ? `${parent.firstName} ${parent.lastName}` : <span className="text-gray-400 italic">Loading...</span>}</td>
-                  <td className="border border-gray-200 px-4 py-2">{parent ? parent.email : <span className="text-gray-400 italic">Loading...</span>}</td>
-                  <td className="border border-gray-200 px-4 py-2 text-center">{fb.rating}</td>
-                  <td className="border border-gray-200 px-4 py-2">{fb.comment}</td>
-                  <td className="border border-gray-200 px-4 py-2 whitespace-nowrap">
-                    {typeof window !== 'undefined' ? new Date(fb.timestamp).toLocaleString() : new Date(fb.timestamp).toISOString()}
-                  </td>
-                  <td className="border border-gray-200 px-4 py-2">
-                    <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          setUpdateForm({
-                            id: fb.id,
-                            parentId: fb.parentId,
-                            rating: String(fb.rating),
-                            comment: fb.comment,
-                          })
-                          setUpdateError('')
-                          setUpdateOpen(true)
-                        }}
-                      >
-                        Update
-                      </Button>
-                      <Button variant="destructive" size="sm" disabled={deleteLoadingId === fb.id} onClick={() => setConfirmDeleteId(fb.id)}>
-                        {deleteLoadingId === fb.id ? 'Deleting...' : 'Delete'}
-                      </Button>
-                    </div>
-                  </td>
-                </tr>
-              )
-            })}
+            {[...feedbacks]
+              .sort((a, b) => {
+                if (!sortBy) return 0
+                let valA, valB
+                switch (sortBy) {
+                  case 'name': {
+                    const pa = parentDetails[a.parentId]
+                    const pb = parentDetails[b.parentId]
+                    valA = pa ? `${pa.firstName} ${pa.lastName}`.toLowerCase() : ''
+                    valB = pb ? `${pb.firstName} ${pb.lastName}`.toLowerCase() : ''
+                    break
+                  }
+                  case 'email': {
+                    const pa = parentDetails[a.parentId]
+                    const pb = parentDetails[b.parentId]
+                    valA = pa ? pa.email.toLowerCase() : ''
+                    valB = pb ? pb.email.toLowerCase() : ''
+                    break
+                  }
+                  case 'rating':
+                    valA = a.rating
+                    valB = b.rating
+                    break
+                  case 'comment':
+                    valA = a.comment.toLowerCase()
+                    valB = b.comment.toLowerCase()
+                    break
+                  case 'timestamp':
+                    valA = new Date(a.timestamp).getTime()
+                    valB = new Date(b.timestamp).getTime()
+                    break
+                  default:
+                    return 0
+                }
+                if (valA < valB) return sortOrder === 'asc' ? -1 : 1
+                if (valA > valB) return sortOrder === 'asc' ? 1 : -1
+                return 0
+              })
+              .map((fb) => {
+                const parent = parentDetails[fb.parentId]
+                return (
+                  <tr key={fb.id} className="hover:bg-gray-50">
+                    <td className="border border-gray-200 px-4 py-2">{parent ? `${parent.firstName} ${parent.lastName}` : <span className="text-gray-400 italic">Loading...</span>}</td>
+                    <td className="border border-gray-200 px-4 py-2">{parent ? parent.email : <span className="text-gray-400 italic">Loading...</span>}</td>
+                    <td className="border border-gray-200 px-4 py-2 text-center">{fb.rating}</td>
+                    <td className="border border-gray-200 px-4 py-2">{fb.comment}</td>
+                    <td className="border border-gray-200 px-4 py-2 whitespace-nowrap">
+                      {typeof window !== 'undefined' ? new Date(fb.timestamp).toLocaleString() : new Date(fb.timestamp).toISOString()}
+                    </td>
+                    <td className="border border-gray-200 px-4 py-2">
+                      <div className="flex gap-2">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => {
+                            setUpdateForm({
+                              id: fb.id,
+                              parentId: fb.parentId,
+                              rating: String(fb.rating),
+                              comment: fb.comment,
+                            })
+                            setUpdateError('')
+                            setUpdateOpen(true)
+                          }}
+                          title="Update"
+                          className="bg-yellow-400 hover:bg-yellow-500 text-white"
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          disabled={deleteLoadingId === fb.id}
+                          onClick={() => setConfirmDeleteId(fb.id)}
+                          title="Delete"
+                          className="bg-red-500 hover:bg-red-600 text-white"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                )
+              })}
           </tbody>
         </table>
       </div>
@@ -273,7 +417,8 @@ export default function FeedbackTab() {
               Cancel
             </Button>
             <Button
-              variant="destructive"
+              variant="ghost"
+              size="icon"
               disabled={!!deleteLoadingId}
               onClick={async () => {
                 if (!confirmDeleteId) return
@@ -299,8 +444,10 @@ export default function FeedbackTab() {
                 }
                 setDeleteLoadingId(null)
               }}
+              title="Delete"
+              className="bg-red-500 hover:bg-red-600 text-white"
             >
-              {deleteLoadingId ? 'Deleting...' : 'Delete'}
+              <Trash2 className="w-4 h-4" />
             </Button>
           </DialogFooter>
         </DialogContent>
