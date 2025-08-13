@@ -4,18 +4,10 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '
 import { Input } from '../../components/ui/input'
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from '../../components/ui/table'
 import { API_BASE_URL } from '../../lib/api'
-
-type User = {
-  id: string
-  firstName: string
-  lastName: string
-  email: string
-  isVerified: boolean
-  createdAt: string
-}
+import type { Parent } from '../../models/parent'
 
 export default function UsersTab() {
-  const [users, setUsers] = useState<User[]>([])
+  const [users, setUsers] = useState<Parent[]>([])
   const [sortBy, setSortBy] = useState<string>('')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc')
   const [loading, setLoading] = useState(false)
@@ -162,7 +154,7 @@ export default function UsersTab() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {sortedUsers.map((user: User) => (
+              {sortedUsers.map((user: Parent) => (
                 <TableRow key={user.id} className="hover:bg-gray-50">
                   <TableCell className="border border-gray-200 px-4 py-2">
                     {user.firstName} {user.lastName}
