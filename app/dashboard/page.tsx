@@ -5,6 +5,7 @@ import { Avatar, AvatarFallback } from '../../components/ui/avatar'
 import { Popover, PopoverContent, PopoverTrigger } from '../../components/ui/popover'
 import { Sidebar, SidebarContent, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarProvider, SidebarSeparator, SidebarTrigger, useSidebar } from '../../components/ui/sidebar'
 import FeedbackTab from './FeedbackTab'
+import LogsTab from './LogsTab'
 import UsersTab from './UsersTab'
 
 // Responsive sidebar header title
@@ -123,11 +124,7 @@ export default function DashboardPage() {
             </div>
           )}
           {activeTab === 'feedback' && <FeedbackTab />}
-          {activeTab === 'logs' && (
-            <div className="p-8 w-full">
-              <h1 className="text-2xl font-bold mb-6">Coming soon</h1>
-            </div>
-          )}
+          {activeTab === 'logs' && <LogsTab />}
         </main>
       </div>
     )
