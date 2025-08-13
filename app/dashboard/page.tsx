@@ -7,6 +7,7 @@ import { Sidebar, SidebarContent, SidebarHeader, SidebarMenu, SidebarMenuButton,
 import FeedbackTab from './FeedbackTab'
 import LogsTab from './LogsTab'
 import OverviewTab from './OverviewTab'
+import RevenueTab from './RevenueTab'
 import UsersTab from './UsersTab'
 
 // Responsive sidebar header title
@@ -115,11 +116,7 @@ export default function DashboardPage() {
         <main className={`flex-1 transition-all duration-200 ${sidebarWidth}`}>
           {activeTab === 'overview' && <OverviewTab />}
           {activeTab === 'users' && <UsersTab />}
-          {activeTab === 'revenue' && (
-            <div className="p-8 w-full">
-              <h1 className="text-2xl font-bold mb-6">Coming soon</h1>
-            </div>
-          )}
+          {activeTab === 'revenue' && <RevenueTab />}
           {activeTab === 'feedback' && <FeedbackTab />}
           {activeTab === 'logs' && <LogsTab />}
         </main>
