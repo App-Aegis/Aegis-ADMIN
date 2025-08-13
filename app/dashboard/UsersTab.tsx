@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 import { Button } from '../../components/ui/button'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '../../components/ui/dialog'
 import { Input } from '../../components/ui/input'
-import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from '../../components/ui/table'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/ui/table'
 import { API_BASE_URL } from '../../lib/api'
 import type { Parent } from '../../models/parent'
 
@@ -315,7 +315,6 @@ export default function UsersTab() {
                 </TableRow>
               ))}
             </TableBody>
-            <TableCaption>List of all users</TableCaption>
           </Table>
         </div>
       )}

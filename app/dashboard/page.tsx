@@ -6,6 +6,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '../../components/ui/pop
 import { Sidebar, SidebarContent, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarProvider, SidebarSeparator, SidebarTrigger, useSidebar } from '../../components/ui/sidebar'
 import FeedbackTab from './FeedbackTab'
 import LogsTab from './LogsTab'
+import OverviewTab from './OverviewTab'
 import UsersTab from './UsersTab'
 
 // Responsive sidebar header title
@@ -112,11 +113,7 @@ export default function DashboardPage() {
           <SidebarUserProfile email={email} />
         </Sidebar>
         <main className={`flex-1 transition-all duration-200 ${sidebarWidth}`}>
-          {activeTab === 'overview' && (
-            <div className="p-8 w-full">
-              <h1 className="text-2xl font-bold mb-6">Coming soon</h1>
-            </div>
-          )}
+          {activeTab === 'overview' && <OverviewTab />}
           {activeTab === 'users' && <UsersTab />}
           {activeTab === 'revenue' && (
             <div className="p-8 w-full">
