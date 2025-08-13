@@ -1,4 +1,4 @@
-import { Activity, MessageCircle, RefreshCw, Users as UsersIcon } from 'lucide-react'
+import { Activity, DollarSign, MessageCircle, RefreshCw, Users as UsersIcon } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Bar, BarChart, Line, LineChart, XAxis, YAxis } from 'recharts'
 import { Button } from '../../components/ui/button'
@@ -7,11 +7,13 @@ import { API_BASE_URL } from '../../lib/api'
 import type { Feedback } from '../../models/feedback'
 import type { Log } from '../../models/log'
 import type { Parent } from '../../models/parent'
+import type { Payment } from '../../models/payment'
 
 export default function OverviewTab() {
   const [users, setUsers] = useState<Parent[]>([])
   const [feedbacks, setFeedbacks] = useState<Feedback[]>([])
   const [logs, setLogs] = useState<Log[]>([])
+  const [payments, setPayments] = useState<Payment[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [dateRange, setDateRange] = useState<'this_month' | 'this_quarter' | 'this_year' | 'last_month' | 'last_quarter' | 'last_year'>('this_month')
@@ -64,18 +66,21 @@ export default function OverviewTab() {
     setLoading(true)
     setError(null)
     try {
-      const [usersRes, feedbacksRes, logsRes] = await Promise.all([
+      const [usersRes, feedbacksRes, logsRes, paymentsRes] = await Promise.all([
         fetch(`${API_BASE_URL}/parents?page=1&pageSize=1000`, { headers: { Authorization: `Bearer ${typeof window !== 'undefined' ? localStorage.getItem('token') : ''}` } }),
         fetch(`${API_BASE_URL}/feedbacks?page=1&pageSize=1000`, { headers: { Authorization: `Bearer ${typeof window !== 'undefined' ? localStorage.getItem('token') : ''}` } }),
         fetch(`${API_BASE_URL}/logs?page=1&pageSize=1000&eventType=Login`, { headers: { Authorization: `Bearer ${typeof window !== 'undefined' ? localStorage.getItem('token') : ''}` } }),
+        fetch(`${API_BASE_URL}/payments?page=1&pageSize=1000`, { headers: { Authorization: `Bearer ${typeof window !== 'undefined' ? localStorage.getItem('token') : ''}` } }),
       ])
-      if (!usersRes.ok || !feedbacksRes.ok || !logsRes.ok) throw new Error('Failed to fetch overview data')
+      if (!usersRes.ok || !feedbacksRes.ok || !logsRes.ok || !paymentsRes.ok) throw new Error('Failed to fetch overview data')
       const usersData = await usersRes.json()
       const feedbacksData = await feedbacksRes.json()
       const logsData = await logsRes.json()
+      const paymentsData = await paymentsRes.json()
       setUsers(Array.isArray(usersData.items) ? usersData.items : Array.isArray(usersData) ? usersData : [])
       setFeedbacks(Array.isArray(feedbacksData.items) ? feedbacksData.items : Array.isArray(feedbacksData) ? feedbacksData : [])
       setLogs(Array.isArray(logsData.items) ? logsData.items : Array.isArray(logsData) ? logsData : [])
+      setPayments(Array.isArray(paymentsData.items) ? paymentsData.items : Array.isArray(paymentsData) ? paymentsData : [])
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Unknown error')
     } finally {
@@ -110,10 +115,30 @@ export default function OverviewTab() {
   const activeUserIds = Array.from(new Set(logs.filter((log) => inRange(log.timestamp)).map((log) => log.parentId)))
   const activeUsers = activeUserIds.length
 
+  // Revenue calculations
+  const paymentsInRange = payments.filter((p) => inRange(p.timestamp) && p.status === 'Succeeded')
+  const totalRevenue = paymentsInRange.reduce((sum, p) => sum + p.amount, 0)
+  // Revenue by month (last 6 months)
+  const now = new Date()
+  const revenueGrowthData = (() => {
+    const months: { [k: string]: number } = {}
+    for (let i = 5; i >= 0; --i) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
+      const key = `${d.getFullYear()}-${d.getMonth() + 1}`
+      months[key] = 0
+    }
+    payments.forEach((p) => {
+      if (p.status !== 'Succeeded') return
+      const d = new Date(p.timestamp)
+      const key = `${d.getFullYear()}-${d.getMonth() + 1}`
+      if (months[key] !== undefined && d >= rangeStart && d <= rangeEnd) months[key] += p.amount
+    })
+    return Object.entries(months).map(([k, v]) => ({ month: k, revenue: v / 100 }))
+  })()
+
   // Chart data
   const feedbackChartData = feedbackByRating.map((f) => ({ name: `${f.star}★`, value: f.count }))
   // Users growth by month (last 6 months)
-  const now = new Date()
   const userGrowthData = (() => {
     const months: { [k: string]: number } = {}
     for (let i = 5; i >= 0; --i) {
@@ -165,7 +190,7 @@ export default function OverviewTab() {
           </Button>
         </div>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
         {/* Users Card */}
         <div className="bg-white/90 dark:bg-gray-800/90 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 p-8 flex flex-col items-center transition-all hover:scale-[1.025] hover:shadow-3xl">
           <UsersIcon className="w-7 h-7 text-blue-500 mb-2" />
@@ -198,8 +223,16 @@ export default function OverviewTab() {
           <div className="text-3xl font-bold mb-2">{activeUsers}</div>
           <div className="text-xs text-gray-500">Unique logins in selected range</div>
         </div>
+        {/* Revenue Card */}
+        <div className="bg-white/90 dark:bg-gray-800/90 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 p-8 flex flex-col items-center transition-all hover:scale-[1.025] hover:shadow-3xl">
+          <DollarSign className="w-7 h-7 text-emerald-500 mb-2" />
+          <div className="font-bold text-lg mb-2">Total Revenue</div>
+          <div className="text-3xl font-bold mb-2">{totalRevenue.toLocaleString(undefined, { style: 'currency', currency: 'USD' })}</div>
+          <div className="text-xs text-gray-500">Succeeded payments in range</div>
+        </div>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        {/* Feedback Distribution by Star Chart */}
         <div className="bg-white/95 dark:bg-gray-800/95 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 p-8 transition-all hover:scale-[1.015] hover:shadow-3xl">
           <div className="font-semibold mb-2">Feedback Distribution by Star</div>
           <ChartContainer config={{ value: { color: '#3b82f6', label: 'Feedback Count' } }}>
@@ -210,6 +243,18 @@ export default function OverviewTab() {
             </BarChart>
           </ChartContainer>
         </div>
+        {/* Revenue Growth Chart */}
+        <div className="bg-white/95 dark:bg-gray-800/95 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 p-8 transition-all hover:scale-[1.015] hover:shadow-3xl">
+          <div className="font-semibold mb-2">Revenue (Last 6 Months)</div>
+          <ChartContainer config={{ revenue: { color: '#10b981', label: 'Revenue' } }}>
+            <LineChart data={revenueGrowthData}>
+              <XAxis dataKey="month" />
+              <YAxis allowDecimals={false} />
+              <Line type="monotone" dataKey="revenue" stroke="#10b981" />
+            </LineChart>
+          </ChartContainer>
+        </div>
+        {/* User Growth Chart */}
         <div className="bg-white/95 dark:bg-gray-800/95 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 p-8 transition-all hover:scale-[1.015] hover:shadow-3xl">
           <div className="font-semibold mb-2">User Growth (Last 6 Months)</div>
           <ChartContainer config={{ users: { color: '#10b981', label: 'New Users' } }}>
@@ -220,7 +265,8 @@ export default function OverviewTab() {
             </LineChart>
           </ChartContainer>
         </div>
-        <div className="bg-white/95 dark:bg-gray-800/95 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 p-8 md:col-span-2 transition-all hover:scale-[1.015] hover:shadow-3xl">
+        {/* Monthly Active Users Chart */}
+        <div className="bg-white/95 dark:bg-gray-800/95 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 p-8 transition-all hover:scale-[1.015] hover:shadow-3xl">
           <div className="font-semibold mb-2">Monthly Active Users (Last 6 Months)</div>
           <ChartContainer config={{ users: { color: '#f59e42', label: 'Active' } }}>
             <LineChart data={activeChartData}>
