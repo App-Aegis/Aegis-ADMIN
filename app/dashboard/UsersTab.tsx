@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import { Button } from '../../components/ui/button'
-import { Card } from '../../components/ui/card'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '../../components/ui/dialog'
 import { Input } from '../../components/ui/input'
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from '../../components/ui/table'
@@ -86,9 +85,9 @@ export default function UsersTab() {
   })
 
   return (
-    <Card className="p-8 w-full max-w-4xl shadow-lg">
+    <div className="p-8 w-full">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-center">Users</h1>
+        <h1 className="text-2xl font-bold">Users</h1>
         <div className="flex gap-2">
           <Button variant="default" size="sm" onClick={() => setAddOpen(true)}>
             Add
@@ -379,6 +378,6 @@ export default function UsersTab() {
           </form>
         </DialogContent>
       </Dialog>
-    </Card>
+    </div>
   )
 }

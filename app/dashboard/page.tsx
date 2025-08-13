@@ -65,7 +65,7 @@ export default function DashboardPage() {
             </Popover>
           </div>
         </Sidebar>
-        <main className="flex-1 flex items-center justify-center">
+        <main className="flex-1">
           {activeTab === 'users' ? (
             <UsersTab />
           ) : (
