@@ -1,11 +1,55 @@
 'use client'
-
 import { BarChart, FileText, LayoutDashboard, MessageCircle, Users } from 'lucide-react'
 import { useState } from 'react'
 import { Avatar, AvatarFallback } from '../../components/ui/avatar'
 import { Popover, PopoverContent, PopoverTrigger } from '../../components/ui/popover'
-import { Sidebar, SidebarContent, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarProvider, SidebarSeparator } from '../../components/ui/sidebar'
+import { Sidebar, SidebarContent, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarProvider, SidebarSeparator, SidebarTrigger, useSidebar } from '../../components/ui/sidebar'
 import UsersTab from './UsersTab'
+
+// Responsive sidebar header title
+function SidebarHeaderTitle() {
+  const { state } = useSidebar()
+  return (
+    <div className={state === 'collapsed' ? 'hidden' : 'flex-1 min-w-0 max-w-full overflow-hidden whitespace-nowrap pr-12'}>
+      <SidebarTitle />
+    </div>
+  )
+}
+
+// Sidebar title responsive to sidebar state
+function SidebarTitle() {
+  const { state } = useSidebar()
+  return <span className="font-bold text-xl tracking-tight transition-all duration-200">{state === 'collapsed' ? 'A+' : 'Aegis+ Admin Dashboard'}</span>
+}
+
+// Avatar at bottom, responsive to sidebar state
+function SidebarUserProfile({ email }: { email: string }) {
+  const { state } = useSidebar()
+  return (
+    <div className={`absolute bottom-0 left-0 w-full flex items-center pb-4 transition-all duration-200 ${state === 'collapsed' ? 'justify-center pl-0' : 'justify-start pl-6'}`}>
+      <Popover>
+        <PopoverTrigger asChild>
+          <Avatar className={`cursor-pointer shadow-lg transition-all duration-200 ${state === 'collapsed' ? 'size-8' : 'size-12'}`}>
+            <AvatarFallback className={`font-bold bg-primary text-primary-foreground ${state === 'collapsed' ? 'text-base' : 'text-xl'}`}>{email ? email[0].toUpperCase() : '?'}</AvatarFallback>
+          </Avatar>
+        </PopoverTrigger>
+        <PopoverContent align="center" className="w-56 flex flex-col items-center">
+          <div className="mb-2 text-lg font-semibold">{email}</div>
+          <button
+            className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-4 rounded w-full"
+            onClick={() => {
+              localStorage.removeItem('token')
+              document.cookie = 'token=; Max-Age=0; path=/'
+              window.location.href = '/login'
+            }}
+          >
+            Logout
+          </button>
+        </PopoverContent>
+      </Popover>
+    </div>
+  )
+}
 
 export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'revenue' | 'feedback' | 'logs'>('overview')
@@ -22,13 +66,23 @@ export default function DashboardPage() {
 
   return (
     <SidebarProvider>
-      <div className="flex min-h-screen bg-background">
-        <Sidebar className="h-screen bg-sidebar text-sidebar-foreground border-r border-sidebar-border shadow-lg">
-          <SidebarHeader className="mb-2">
-            <span className="font-bold text-xl tracking-tight">Aegis+ Admin Dashboard</span>
+      <DashboardLayout activeTab={activeTab} setActiveTab={setActiveTab} email={email} />
+    </SidebarProvider>
+  )
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  function DashboardLayout({ activeTab, setActiveTab, email }: { activeTab: 'overview' | 'users' | 'revenue' | 'feedback' | 'logs'; setActiveTab: (tab: any) => void; email: string }) {
+    const { state } = useSidebar()
+    const sidebarWidth = state === 'collapsed' ? 'ml-12' : 'ml-72'
+    return (
+      <div className="relative min-h-screen bg-background">
+        <Sidebar className="fixed top-0 left-0 h-screen bg-sidebar text-sidebar-foreground border-r border-sidebar-border shadow-lg w-72 z-20" collapsible="icon">
+          <SidebarHeader className={`mb-2 flex items-center min-w-0 ${state === 'collapsed' ? 'flex-col justify-start gap-2 h-20 p-0 w-12' : 'flex-row justify-between'}`}>
+            {state !== 'collapsed' && <SidebarHeaderTitle />}
+            <SidebarTrigger className={`p-0 w-8 h-8 flex items-center justify-center ${state === 'collapsed' ? 'my-2' : ''}`} />
           </SidebarHeader>
-          <SidebarContent className="flex flex-col h-full">
-            <SidebarMenu className="flex flex-col gap-1">
+          <SidebarContent className="flex flex-col h-full items-center">
+            <SidebarMenu className="flex flex-col gap-1 items-center">
               <SidebarMenuButton className="mb-1" variant="default" size="lg" isActive={activeTab === 'overview'} tooltip="Overview" onClick={() => setActiveTab('overview')}>
                 <LayoutDashboard className="mr-2" />
                 <span>Overview</span>
@@ -52,31 +106,10 @@ export default function DashboardPage() {
             </SidebarMenu>
             <SidebarSeparator />
           </SidebarContent>
-          {/* User avatar at bottom */}
-          <div className="absolute bottom-0 left-0 w-full flex items-center justify-start pl-6 pb-4">
-            <Popover>
-              <PopoverTrigger asChild>
-                <Avatar className="cursor-pointer size-12 shadow-lg">
-                  <AvatarFallback className="text-xl font-bold bg-primary text-primary-foreground">{email ? email[0].toUpperCase() : '?'}</AvatarFallback>
-                </Avatar>
-              </PopoverTrigger>
-              <PopoverContent align="center" className="w-56 flex flex-col items-center">
-                <div className="mb-2 text-lg font-semibold">{email}</div>
-                <button
-                  className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-4 rounded w-full"
-                  onClick={() => {
-                    localStorage.removeItem('token')
-                    document.cookie = 'token=; Max-Age=0; path=/'
-                    window.location.href = '/login'
-                  }}
-                >
-                  Logout
-                </button>
-              </PopoverContent>
-            </Popover>
-          </div>
+          {/* User avatar at bottom, responsive to sidebar state */}
+          <SidebarUserProfile email={email} />
         </Sidebar>
-        <main className="flex-1">
+        <main className={`flex-1 transition-all duration-200 ${sidebarWidth}`}>
           {activeTab === 'overview' && (
             <div className="p-8 w-full">
               <h1 className="text-2xl font-bold mb-6">Coming soon</h1>
@@ -100,6 +133,6 @@ export default function DashboardPage() {
           )}
         </main>
       </div>
-    </SidebarProvider>
-  )
+    )
+  }
 }
