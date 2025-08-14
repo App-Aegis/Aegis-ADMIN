@@ -1,5 +1,5 @@
 'use client'
-import { BarChart, FileText, LayoutDashboard, MessageCircle, Users } from 'lucide-react'
+import { BarChart, Database, FileText, LayoutDashboard, MessageCircle, Users } from 'lucide-react'
 import { useState } from 'react'
 import { Avatar, AvatarFallback } from '../../components/ui/avatar'
 import { Popover, PopoverContent, PopoverTrigger } from '../../components/ui/popover'
@@ -9,6 +9,7 @@ import LogsTab from './LogsTab'
 import OverviewTab from './OverviewTab'
 import RevenueTab from './RevenueTab'
 import UsersTab from './UsersTab'
+import DatabaseTab from './database/page'
 
 // Responsive sidebar header title
 function SidebarHeaderTitle() {
@@ -56,7 +57,7 @@ function SidebarUserProfile({ email }: { email: string }) {
 }
 
 export default function DashboardPage() {
-  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'revenue' | 'feedback' | 'logs'>('overview')
+  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'revenue' | 'feedback' | 'logs' | 'database'>('overview')
   let email = ''
   if (typeof window !== 'undefined') {
     const token = localStorage.getItem('token')
@@ -75,7 +76,7 @@ export default function DashboardPage() {
   )
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  function DashboardLayout({ activeTab, setActiveTab, email }: { activeTab: 'overview' | 'users' | 'revenue' | 'feedback' | 'logs'; setActiveTab: (tab: any) => void; email: string }) {
+  function DashboardLayout({ activeTab, setActiveTab, email }: { activeTab: 'overview' | 'users' | 'revenue' | 'feedback' | 'logs' | 'database'; setActiveTab: (tab: any) => void; email: string }) {
     const { state } = useSidebar()
     const sidebarWidth = state === 'collapsed' ? 'ml-12' : 'ml-72'
     return (
@@ -107,6 +108,10 @@ export default function DashboardPage() {
                 <FileText className="mr-2" />
                 <span>Logs</span>
               </SidebarMenuButton>
+              <SidebarMenuButton className="mb-1" variant="default" size="lg" isActive={activeTab === 'database'} tooltip="Database" onClick={() => setActiveTab('database')}>
+                <Database className="mr-2" />
+                <span>Database (read-only)</span>
+              </SidebarMenuButton>
             </SidebarMenu>
             <SidebarSeparator />
           </SidebarContent>
@@ -119,6 +124,7 @@ export default function DashboardPage() {
           {activeTab === 'revenue' && <RevenueTab />}
           {activeTab === 'feedback' && <FeedbackTab />}
           {activeTab === 'logs' && <LogsTab />}
+          {activeTab === 'database' && <DatabaseTab />}
         </main>
       </div>
     )

@@ -227,7 +227,7 @@ export default function OverviewTab() {
         <div className="bg-white/90 dark:bg-gray-800/90 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 p-8 flex flex-col items-center transition-all hover:scale-[1.025] hover:shadow-3xl">
           <DollarSign className="w-7 h-7 text-emerald-500 mb-2" />
           <div className="font-bold text-lg mb-2">Total Revenue</div>
-          <div className="text-3xl font-bold mb-2">{totalRevenue.toLocaleString(undefined, { style: 'currency', currency: 'USD' })}</div>
+          <div className="text-3xl font-bold mb-2">{totalRevenue.toLocaleString(undefined, { style: 'currency', currency: 'VND' })}</div>
           <div className="text-xs text-gray-500">Succeeded payments in range</div>
         </div>
       </div>

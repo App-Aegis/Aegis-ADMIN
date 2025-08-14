@@ -306,6 +306,19 @@ export default function RevenueTab() {
               <th
                 className="border border-gray-300 px-4 py-2 cursor-pointer font-bold"
                 onClick={() => {
+                  if (sortBy === 'transactionNumber') {
+                    setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')
+                  } else {
+                    setSortBy('transactionNumber')
+                    setSortOrder('asc')
+                  }
+                }}
+              >
+                Transaction Number {sortBy === 'transactionNumber' ? (sortOrder === 'asc' ? '▲' : '▼') : ''}
+              </th>
+              <th
+                className="border border-gray-300 px-4 py-2 cursor-pointer font-bold"
+                onClick={() => {
                   if (sortBy === 'status') {
                     setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')
                   } else {
@@ -362,6 +375,10 @@ export default function RevenueTab() {
                     valA = a.amount
                     valB = b.amount
                     break
+                  case 'transactionNumber':
+                    valA = a.transactionNumber?.toLowerCase() || ''
+                    valB = b.transactionNumber?.toLowerCase() || ''
+                    break
                   case 'timestamp':
                     valA = new Date(a.timestamp).getTime()
                     valB = new Date(b.timestamp).getTime()
@@ -385,7 +402,12 @@ export default function RevenueTab() {
                 <tr key={p.id} className="hover:bg-gray-50">
                   <td className="border border-gray-200 px-4 py-2">{p.parentFullName}</td>
                   <td className="border border-gray-200 px-4 py-2">{p.parentEmail}</td>
-                  <td className="border border-gray-200 px-4 py-2">{(p.amount / 100).toLocaleString(undefined, { style: 'currency', currency: p.currency || 'USD' })}</td>
+                  <td className="border border-gray-200 px-4 py-2">
+                    {p.currency === 'VND'
+                      ? p.amount.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' })
+                      : (p.amount / 100).toLocaleString(undefined, { style: 'currency', currency: p.currency || 'USD' })}
+                  </td>
+                  <td className="border border-gray-200 px-4 py-2">{p.transactionNumber || '-'}</td>
                   <td className="border border-gray-200 px-4 py-2">
                     {p.status === 'Succeeded' ? (
                       <span className="inline-flex items-center rounded-md bg-green-500 text-white px-2 py-0.5 text-xs font-medium">Succeeded</span>
@@ -405,7 +427,7 @@ export default function RevenueTab() {
               ))}
             {payments.length === 0 && (
               <tr>
-                <td colSpan={6} className="text-center py-4 text-gray-500">
+                <td colSpan={8} className="text-center py-4 text-gray-500">
                   No payments found.
                 </td>
               </tr>

@@ -11,4 +11,5 @@ export interface Payment {
   parentId: string
   parentEmail: string
   parentFullName: string
+  transactionNumber?: string
 }
