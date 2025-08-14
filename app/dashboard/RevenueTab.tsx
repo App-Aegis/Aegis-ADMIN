@@ -355,6 +355,7 @@ export default function RevenueTab() {
               >
                 Timestamp {sortBy === 'timestamp' ? (sortOrder === 'asc' ? '▲' : '▼') : ''}
               </th>
+              <th className="border border-gray-300 px-4 py-2 font-bold">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -423,6 +424,36 @@ export default function RevenueTab() {
                   </td>
                   <td className="border border-gray-200 px-4 py-2">{p.planName}</td>
                   <td className="border border-gray-200 px-4 py-2 whitespace-nowrap">{new Date(p.timestamp).toLocaleString()}</td>
+                  <td className="border border-gray-200 px-4 py-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      title="Download Invoice"
+                      onClick={async () => {
+                        try {
+                          const res = await fetch(`${API_BASE_URL}/payments/${p.id}/invoice`, {
+                            headers: {
+                              Authorization: `Bearer ${typeof window !== 'undefined' ? localStorage.getItem('token') : ''}`,
+                            },
+                          })
+                          if (!res.ok) throw new Error('Failed to download invoice')
+                          const blob = await res.blob()
+                          const url = window.URL.createObjectURL(blob)
+                          const a = document.createElement('a')
+                          a.href = url
+                          a.download = `invoice-${p.transactionNumber || p.id}.pdf`
+                          document.body.appendChild(a)
+                          a.click()
+                          a.remove()
+                          window.URL.revokeObjectURL(url)
+                        } catch {
+                          alert('Failed to download invoice')
+                        }
+                      }}
+                    >
+                      <Download className="w-4 h-4 mr-1 inline" />
+                    </Button>
+                  </td>
                 </tr>
               ))}
             {payments.length === 0 && (
